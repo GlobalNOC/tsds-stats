@@ -1,0 +1,8 @@
+<config>
+    <mongo host="127.0.0.1" port="27017">
+        <root user="user" password="password" db="admin"/>
+    </mongo>
+    <tsds url="https://127.0.0.1/tsds/services/push.cgi" interval="300" >
+	<auth user="user" password="password"/>
+    </tsds>
+</config>
