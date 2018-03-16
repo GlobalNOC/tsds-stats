@@ -128,19 +128,23 @@ eval {
 
 #Iterating DB in MongoDB
 foreach my $n (0 .. $#db_list) {
+ 
+        next if (grep { $_ eq $db_list[$n] } ('admin', 'config', 'local'));
+    
+
 	my $db = $client->get_database($db_list[$n]);
 
 	my @collections = $db->collection_names;
 	if( grep { $_ eq 'measurements'} @collections ) {
 		my $measurements = $db->get_collection('measurements');
         	if($db_list[$n] eq "interface") {
-                	my $out = $measurements->aggregate(
+                	my @out = $measurements->aggregate(
 	                        [
         	                        {'$match' => {end => undef }},
                 	                {'$group' => {_id => '$network', count => {'$sum' => 1}}}
                         	]
-	                );
-        	        for my $element (@$out) {
+	                )->all();
+        	        for my $element (@out) {
                 	        my $network = $element->{_id};
                         	if(!defined $network || $network eq '' ) {
 	                                $network = 'None';
@@ -182,7 +186,7 @@ log_info("TSDS Job completed in ". $interval );
 };
 
 if($@) {
-	log_error("Unexpected Error");
+	log_error("Unexpected Error: $@");
 	exit();
 }
 
