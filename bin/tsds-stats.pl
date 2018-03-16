@@ -13,14 +13,15 @@ use Getopt::Long;
 #initialization
 my $config = "/etc/grnoc/tsds-stats/config.xml";
 my $logging = "/etc/grnoc/tsds-stats/logging.conf";
+my $status = "/var/lib/grnoc/tsds-stats/";
 
 #CMD args
-GetOptions( 'config=s' => \$config,'logging=s' => \$logging);
+GetOptions( 'config=s' => \$config,'logging=s' => \$logging, 'status=s' => \$status);
 
 my $conf = GRNOC::Config->new( config_file => $config,force_array => 0 );
 GRNOC::Log->new(config => $logging);
 log_debug("TSDS Job started");
-log_info("Using $config and $logging");
+log_info("Using --config $config --logging $logging --status $status");
 
 # Just a MongoDB Connect
 sub connect {
@@ -185,7 +186,7 @@ if($@) {
 	exit();
 }
 
-my $res = write_service_status( path => "/home/jeffravi/scripts/", error => 0, error_txt => "");
+my $res = write_service_status( path => $status, error => 0, error_txt => "");
 
 
 

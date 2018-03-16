@@ -35,16 +35,16 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -d -p %{buildroot}/etc/grnoc/tsds-stats/
 %{__install} -d -p %{buildroot}/usr/bin/
 %{__install} -d -p %{buildroot}/etc/cron.d/
+%{__install} -d -p %{buildroot}/var/lib/grnoc/tsds-stats/
 
 #Copy files
 %{__install} conf/config.xml %{buildroot}/etc/grnoc/tsds-stats/config.xml
 %{__install} conf/logging.conf %{buildroot}/etc/grnoc/tsds-stats/logging.conf
 %{__install} conf/tsds-stats.cron %{buildroot}/etc/cron.d/tsds-stats.cron
-
 %{__install} bin/tsds-stats.pl %{buildroot}/usr/bin/tsds-stats.pl
 
-find %{buildroot} -name .packlist -exec %{__rm} {} \;
-%{_fixperms} $RPM_BUILD_ROOT/*
+#find %{buildroot} -name .packlist -exec %{__rm} {} \;
+#%{_fixperms} $RPM_BUILD_ROOT/*
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -56,5 +56,8 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /etc/grnoc/tsds-stats/logging.conf
 %config(noreplace) /etc/cron.d/tsds-stats.cron
 
-%defattr(754, root, root, -)
+%defattr(-, root, root, 755)
+%dir /var/lib/grnoc/tsds-stats/ 
+
+%defattr(754, tsds, tsds, -)
 /usr/bin/tsds-stats.pl
