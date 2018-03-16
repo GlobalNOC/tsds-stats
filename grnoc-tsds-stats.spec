@@ -56,7 +56,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /etc/grnoc/tsds-stats/logging.conf
 %config(noreplace) /etc/cron.d/tsds-stats.cron
 
-%defattr(-, root, root, 755)
+%defattr(-, tsds, tsds, 755)
 %dir /var/lib/grnoc/tsds-stats/ 
 
 %defattr(754, tsds, tsds, -)
