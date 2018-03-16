@@ -11,27 +11,27 @@ use GRNOC::Monitoring::Service::Status qw(write_service_status);
 use Getopt::Long;
 
 #initialization
-my $conf_dir = "/etc/grnoc/tsds-stats";
+my $config = "/etc/grnoc/tsds-stats/config.xml";
+my $logging = "/etc/grnoc/tsds-stats/logging.conf";
 
 #CMD args
-GetOptions( 'conf_dir=s' => \$conf_dir);
+GetOptions( 'config=s' => \$config,'logging=s' => \$logging);
 
-my $config_file = $conf_dir."/config.xml";
-my $logging_file = $conf_dir."/logging.conf";
-my $config = GRNOC::Config->new( config_file => $config_file,force_array => 0 );
-GRNOC::Log->new(config => $logging_file);
+my $conf = GRNOC::Config->new( config_file => $config,force_array => 0 );
+GRNOC::Log->new(config => $logging);
 log_debug("TSDS Job started");
-log_info("Using config dir $conf_dir");
+log_info("Using $config and $logging");
+
 # Just a MongoDB Connect
 sub connect {
 	my $client;
 	eval {
 		$client = MongoDB::MongoClient->new(
-	            host     => $config->get('/config/mongo/@host'),
-		    port     => $config->get('/config/mongo/@port'),
-		    username => $config->get('/config/mongo/root')->{'user'},
-		    password => $config->get('/config/mongo/root')->{'password'},
-		    db_name  => $config->get('/config/mongo/root')->{'db'}
+	            host     => $conf->get('/config/mongo/@host'),
+		    port     => $conf->get('/config/mongo/@port'),
+		    username => $conf->get('/config/mongo/root')->{'user'},
+		    password => $conf->get('/config/mongo/root')->{'password'},
+		    db_name  => $conf->get('/config/mongo/root')->{'db'}
 		);
 	};
 	if($@) {
@@ -85,7 +85,7 @@ sub get_collection_stats {
 	my $collection = $_[3];
 	my %element;
         $element{type} = "measurement_collection_stats";
-        $element{interval} = $config->get('/config/tsds/@interval');
+        $element{interval} = $conf->get('/config/tsds/@interval');
         $element{meta} = { "collection_name" => $collection, "measurement_type"=> $db};
         $element{time} = $time;
         $element{values} = {"avgObjSize" => $out->{avgObjSize}, "count" => $out->{count} , "storageSize" => $out->{storageSize}, "totalIndexSize" => $out->{totalIndexSize}};
@@ -96,12 +96,12 @@ sub get_collection_stats {
 # Push Json data to TSDS
 sub push_data {
 	my $json_data = $_[0];	
-	log_debug($json_data);	
+	#log_debug($json_data);	
 	eval {
         	my $http = GRNOC::WebService::Client->new(
-        		url => $config->get('/config/tsds/@url'),
-		        uid => $config->get('/config/tsds/auth')->{'user'},
-		        passwd => $config->get('/config/tsds/auth')->{'password'},
+        		url => $conf->get('/config/tsds/@url'),
+		        uid => $conf->get('/config/tsds/auth')->{'user'},
+		        passwd => $conf->get('/config/tsds/auth')->{'password'},
 		        usePost => 1
 		);
 		my $res = $http->add_data(data=>$json_data);
