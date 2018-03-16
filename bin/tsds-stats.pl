@@ -7,15 +7,21 @@ use JSON;
 use feature 'say';
 use GRNOC::Log;
 use GRNOC::WebService::Client;
+use GRNOC::Monitoring::Service::Status qw(write_service_status);
+use Getopt::Long;
 
 #initialization
-my $dir = "/etc/grnoc/tsds/";
-my $config_file = $dir."config.xml";
-my $logging_file = $dir."logging.conf";
+my $conf_dir = "/etc/grnoc/tsds-stats";
+
+#CMD args
+GetOptions( 'conf_dir=s' => \$conf_dir);
+
+my $config_file = $conf_dir."/config.xml";
+my $logging_file = $conf_dir."/logging.conf";
 my $config = GRNOC::Config->new( config_file => $config_file,force_array => 0 );
 GRNOC::Log->new(config => $logging_file);
 log_debug("TSDS Job started");
-
+log_info("Using config dir $conf_dir");
 # Just a MongoDB Connect
 sub connect {
 	my $client;
@@ -90,7 +96,7 @@ sub get_collection_stats {
 # Push Json data to TSDS
 sub push_data {
 	my $json_data = $_[0];	
-	#log_debug("Data: ".$json_data);	
+	log_debug($json_data);	
 	eval {
         	my $http = GRNOC::WebService::Client->new(
         		url => $config->get('/config/tsds/@url'),
@@ -106,7 +112,6 @@ sub push_data {
 		log_error("Cannot push data to TSDS");
 		exit();
 	}
-	#print "Result = " . Dumper($res);
 }
 
 
@@ -124,31 +129,32 @@ eval {
 foreach my $n (0 .. $#db_list) {
 	my $db = $client->get_database($db_list[$n]);
 
-	my $measurements = $db->get_collection('measurements');
-	if($db_list[$n] eq "interface") {
-		my $out = $measurements->aggregate(
-			[
-				{'$match' => {end => undef }},
-		       		{'$group' => {_id => '$network', count => {'$sum' => 1}}}
-    			]
-		);
-		for my $element (@$out) {			
-			my $network = $element->{_id};
-			if(!defined $network || $network eq '' ) {
-				$network = 'None';
-			}
-			my %active_measurements_element = get_active_measurements($db_list[$n],$network,$epoc,$element->{count});
-			push( @active_measurements_elements, \%active_measurements_element );
-		}
-	} else {
-		my $count = $measurements->count({end => undef});
-		my %active_measurements_element = get_active_measurements($db_list[$n],'all',$epoc,$count);
-		push( @active_measurements_elements, \%active_measurements_element );
-	}	
-	
-	#Collection Index information
 	my @collections = $db->collection_names;
 	if( grep { $_ eq 'measurements'} @collections ) {
+		my $measurements = $db->get_collection('measurements');
+        	if($db_list[$n] eq "interface") {
+                	my $out = $measurements->aggregate(
+	                        [
+        	                        {'$match' => {end => undef }},
+                	                {'$group' => {_id => '$network', count => {'$sum' => 1}}}
+                        	]
+	                );
+        	        for my $element (@$out) {
+                	        my $network = $element->{_id};
+                        	if(!defined $network || $network eq '' ) {
+	                                $network = 'None';
+        	                }
+                	        my %active_measurements_element = get_active_measurements($db_list[$n],$network,$epoc,$element->{count});
+                        	push( @active_measurements_elements, \%active_measurements_element );
+	                }
+        	} else {
+                	my $count = $measurements->count({end => undef});
+	                my %active_measurements_element = get_active_measurements($db_list[$n],'all',$epoc,$count);
+        	        push( @active_measurements_elements, \%active_measurements_element );
+	        }
+		
+
+		#Collection Index information
 		for my $collection(@collections) {
 			if($collection =~ m/^data/i || $collection eq 'measurements') {
 				my $collection_obj = $db->get_collection($collection);
@@ -179,7 +185,7 @@ if($@) {
 	exit();
 }
 
-
+my $res = write_service_status( path => "/home/jeffravi/scripts/", error => 0, error_txt => "");
 
 
 

@@ -1,1 +1,1 @@
-*/5 * * * * perl /usr/bin/tsds-stats.pl
+#*/5 * * * * perl /usr/bin/tsds-stats.pl
