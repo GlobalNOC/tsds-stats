@@ -90,6 +90,17 @@ sub get_collection_stats {
         $element{meta} = { "collection_name" => $collection, "measurement_type"=> $db};
         $element{time} = $time;
         $element{values} = {"avgObjSize" => $out->{avgObjSize}, "count" => $out->{count} , "storageSize" => $out->{storageSize}, "totalIndexSize" => $out->{totalIndexSize}};
+
+	if (exists $out->{'shards'}){
+	    foreach my $shard (sort keys %{$out->{'shards'}}){
+		my $block_manager = $out->{'shards'}{$shard}{'wiredTiger'}{'block-manager'};
+		my $size_free  = $block_manager->{'file bytes available for reuse'};
+		my $size_total = $block_manager->{'file size in bytes'};
+		$element{'values'}{"shard_size_free"} += $size_free;
+		$element{'values'}{"shard_size_total"} += $size_total;
+	    }
+	}
+
         return %element;
 
 }
